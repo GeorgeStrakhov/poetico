@@ -140,6 +140,12 @@ const generateLines = async () => {
       },
       body: JSON.stringify({ current_text: content.value.trim() })
     })
+    if (response.status === 401) {
+      localStorage.removeItem('auth_token')
+      router.push('/v')
+      toast.error('Session expired. Please authenticate again.')
+      return
+    }
     const data = await response.json()
     alternatives.value = data.alternatives
   } catch (error) {
@@ -156,7 +162,7 @@ const selectLine = async (index, customText = null) => {
   const allAlternatives = [...alternatives.value]
   
   try {
-    await fetch(`${API_URL}/record_preference`, {
+    const response = await fetch(`${API_URL}/record_preference`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -168,6 +174,12 @@ const selectLine = async (index, customText = null) => {
         chosen: selectedText
       })
     })
+    if (response.status === 401) {
+      localStorage.removeItem('auth_token')
+      router.push('/v')
+      toast.error('Session expired. Please authenticate again.')
+      return
+    }
   } catch (error) {
     console.error('Error recording preference:', error)
   }
@@ -209,6 +221,12 @@ const savePoem = async () => {
         content: content.value 
       })
     })
+    if (response.status === 401) {
+      localStorage.removeItem('auth_token')
+      router.push('/v')
+      toast.error('Session expired. Please authenticate again.')
+      return
+    }
     const data = await response.json()
     currentPoemId.value = data.id
     lastSavedContent.value = content.value
@@ -232,6 +250,12 @@ const loadPoem = async (id) => {
     const response = await fetch(`${API_URL}/poem/${id}`, {
       headers: getAuthHeaders()
     })
+    if (response.status === 401) {
+      localStorage.removeItem('auth_token')
+      router.push('/v')
+      toast.error('Session expired. Please authenticate again.')
+      return
+    }
     if (!response.ok) {
       if (response.status === 404) {
         content.value = ''

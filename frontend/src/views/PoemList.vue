@@ -13,6 +13,16 @@
           </router-link>
         </div>
       </div>
+      
+      <div class="mt-8 text-center">
+        <router-link 
+          to="/download"
+          class="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+        >
+          <font-awesome-icon :icon="['fas', 'download']" />
+          <span>Download All Data</span>
+        </router-link>
+      </div>
     </div>
   </div>
 </template>

@@ -2,7 +2,7 @@
   <div class="modal-backdrop" @click="$emit('close')">
     <div class="suggestions-modal" @click.stop>
       <div class="context-line">
-        {{ context }}
+        {{ context }}...
       </div>
       <div class="suggestions-list">
         <div v-for="(line, index) in alternatives" 

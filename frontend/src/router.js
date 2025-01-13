@@ -10,7 +10,8 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: PoemList
+    component: Editor,
+    meta: { requiresAuth: true }
   },
   {
     path: '/p/:id',
@@ -54,6 +55,8 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = !!localStorage.getItem('auth_token')
   
   if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/v')
+  } else if (to.path === '/' && !isAuthenticated) {
     next('/v')
   } else {
     next()

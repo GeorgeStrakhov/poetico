@@ -51,6 +51,10 @@
 </template>
 
 <script setup>
+import { useAuth } from '../composables/useAuth'
+import { useRouter } from 'vue-router'
+import { useToast } from '../composables/useToast'
+
 const props = defineProps({
   isOpen: {
     type: Boolean,
@@ -62,6 +66,9 @@ const props = defineProps({
   }
 })
 
+const router = useRouter()
+const toast = useToast()
+const { getAuthHeaders } = useAuth()
 const emit = defineEmits(['toggle', 'load-poem', 'delete-poem'])
 
 const formatDate = (isoDate) => {
@@ -75,8 +82,15 @@ const deletePoem = async (id) => {
   
   try {
     const response = await fetch(`/api/poem/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     })
+    if (response.status === 401) {
+      localStorage.removeItem('auth_token')
+      router.push('/v')
+      toast.error('Session expired. Please authenticate again.')
+      return
+    }
     if (response.ok) {
       emit('delete-poem', id)
     }

@@ -196,7 +196,7 @@ async def record_preference(preference: PreferenceRecord):
         logger.error(f"Error recording preference: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_app.get("/download_preferences", dependencies=[Depends(verify_token)])
+@api_app.get("/download_preferences")
 async def download_preferences():
     try:
         if not PREFERENCES_FILE.exists():
@@ -244,7 +244,7 @@ async def save_poem(poem: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Update list poems endpoint to parse new filename format
-@api_app.get("/list_poems", dependencies=[Depends(verify_token)])
+@api_app.get("/list_poems")
 async def list_poems():
     try:
         poems_dir = POEMS_DIR
@@ -279,7 +279,7 @@ async def list_poems():
         raise HTTPException(status_code=500, detail=str(e))
 
 # Update get poem endpoint to handle new filename format
-@api_app.get("/poem/{poem_id}", dependencies=[Depends(verify_token)])
+@api_app.get("/poem/{poem_id}")
 async def get_poem(poem_id: str):
     try:
         # Look for any file containing the poem_id in the middle part
