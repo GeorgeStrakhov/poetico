@@ -21,6 +21,7 @@ import functools
 from datetime import datetime
 from slugify import slugify
 import glob
+import random
 
 # Load environment variables
 load_dotenv()
@@ -90,17 +91,40 @@ def generate_line(text: str, temperature: float) -> str:
         logger.error(f"Error generating line: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Helper function to randomly truncate text
+def randomly_truncate_text(text: str) -> str:
+    lines = text.strip().split('\n')
+    if len(lines) <= 1:
+        return text
+    
+    # Randomly decide how many lines to keep (at least 1)
+    keep_lines = random.randint(1, min(3, len(lines)))
+    return '\n'.join(lines[-keep_lines:])
+
 # Move all API routes to api_app
 @api_app.post("/generate_line", response_model=GenerateResponse)
 async def generate_lines(request: GenerateRequest):
     logger.debug(f"Received generate request with text: {request.current_text}")
-    temperatures = [0.1, 0.5, 0.9, 1.2, 1.5]
+    
+    # Generate 5 random temperatures between 0.1 and 1.5
+    temperatures = [round(random.uniform(0.1, 1.5), 2) for _ in range(5)]
     
     try:
         # Use ThreadPoolExecutor for concurrent execution
         with ThreadPoolExecutor(max_workers=5) as executor:
-            partial_generate = functools.partial(generate_line, request.current_text)
-            alternatives = list(executor.map(partial_generate, temperatures))
+            # For each generation, randomly decide whether to truncate the text
+            texts = [
+                randomly_truncate_text(request.current_text) if random.random() < 0.7 
+                else request.current_text 
+                for _ in range(5)
+            ]
+            
+            # Create tasks with different texts and temperatures
+            tasks = [
+                (text, temp) for text, temp in zip(texts, temperatures)
+            ]
+            
+            alternatives = list(executor.map(lambda x: generate_line(*x), tasks))
             
         return GenerateResponse(alternatives=alternatives, temperatures=temperatures)
     except Exception as e:
