@@ -25,3 +25,7 @@ primary_region = 'ams'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 1024
+
+[mounts]
+  source = "poetico_data"
+  destination = "/data"
