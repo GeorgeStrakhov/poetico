@@ -26,16 +26,19 @@ import random
 # Load environment variables
 load_dotenv()
 
+# Check if we're in development mode
+IS_DEV = os.getenv("DEV_MODE", "true").lower() == "true"
+
 # Initialize FastAPI app
 app = FastAPI()
 
 # Create a sub-application for API routes
 api_app = FastAPI()
 
-# Update CORS to only allow our own origin
+# Update CORS to allow both development and production origins
 api_app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8888"],
+    allow_origins=["http://localhost:8888", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,9 +51,11 @@ client = OpenAI(
 )
 
 # Ensure data directory exists
-DATA_DIR = Path("data")
+ROOT_DIR = Path(__file__).parent.parent.absolute()
+DATA_DIR = ROOT_DIR / "data"
 POEMS_DIR = DATA_DIR / "poems"
 DATA_DIR.mkdir(exist_ok=True)
+POEMS_DIR.mkdir(exist_ok=True)
 PREFERENCES_FILE = DATA_DIR / "line_preferences.jsonl"
 
 # Configure logger
@@ -224,35 +229,72 @@ async def list_poems():
 async def get_poem(poem_id: str):
     try:
         # Look for any file containing the poem_id in the middle part
+        found = False
         for path in POEMS_DIR.glob(f"*-{poem_id}-*.txt"):
+            found = True
             with open(path) as f:
                 content = f.read()
             return {"content": content}
             
-        raise HTTPException(status_code=404, detail="Poem not found")
+        if not found:
+            raise HTTPException(status_code=404, detail="Poem not found")
+            
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404) without catching them
+        raise
     except Exception as e:
         logger.error(f"Error loading poem: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Add delete poem endpoint
+@api_app.delete("/poem/{poem_id}")
+async def delete_poem(poem_id: str):
+    try:
+        deleted = False
+        # Look for any file containing the poem_id in the middle part
+        for path in POEMS_DIR.glob(f"*-{poem_id}-*.txt"):
+            path.unlink()
+            deleted = True
+            
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Poem not found")
+            
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Error deleting poem: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Mount the API routes first
 app.mount("/api", api_app)
 
-# Add this before mounting the static files
-@app.get("/{full_path:path}")
-async def catch_all(full_path: str):
-    # Skip API routes
-    if full_path.startswith("api/"):
-        raise HTTPException(status_code=404, detail="Not found")
-    
-    # Serve index.html for all other routes
-    return FileResponse("frontend/index.html")
-
-# Then mount the static files (but not at root anymore)
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
+# In production mode, serve the built frontend
+if not IS_DEV:
+    # Check if the dist directory exists
+    dist_path = Path("frontend/dist")
+    assets_path = dist_path / "assets"
+    if dist_path.exists() and assets_path.exists():
+        # Serve static files from the Vue build directory
+        app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
+        
+        @app.get("/{full_path:path}")
+        async def catch_all(full_path: str):
+            # Skip API routes
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="Not found")
+            
+            # Serve index.html for all other routes
+            return FileResponse(str(dist_path / "index.html"))
+else:
+    # In development mode, we don't need to serve the frontend
+    # as it's handled by the Vite dev server
+    @app.get("/")
+    async def dev_mode_notice():
+        return {"message": "API server running in development mode. Frontend is served at http://localhost:3000"}
 
 # Function to open browser
 def open_browser():
-    webbrowser.open("http://localhost:8888")
+    port = 3000 if IS_DEV else 8888
+    webbrowser.open(f"http://localhost:{port}")
 
 # Startup event
 @app.on_event("startup")

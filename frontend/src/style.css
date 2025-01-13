@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-dark text-gray-100 min-h-screen font-serif;
+}
+
+.writing-area {
+  @apply w-full min-h-[70vh] pb-[50px] resize-none border-none bg-transparent;
+  outline: none !important;
+  box-shadow: none !important;
+  caret-color: #fff;
+  line-height: 1.5;
+  overflow: hidden;
+  height: auto;
+}
+
+.suggestion {
+    @apply transition-all duration-200;
+}
+
+.suggestion:hover {
+    @apply bg-white/10;
+}
+
+.sidebar {
+    @apply transition-transform duration-300 z-50;
+}
+
+.sidebar.closed {
+    @apply -translate-x-full;
+}
+
+.top-bar-icon {
+    @apply opacity-70 transition-opacity duration-200;
+}
+
+.top-bar-icon:hover {
+    @apply opacity-100;
+}
+
+.top-bar {
+    @apply z-40 relative;
+}
+
+.suggestions-container {
+    @apply z-30;
+}
+
+.suggestion-line {
+    @apply opacity-60 transition-all duration-200 py-1 flex items-center gap-2 mt-2;
+}
+
+.suggestion-line:hover {
+    @apply opacity-100;
+}
+
+.suggestion-text {
+    @apply cursor-pointer flex-grow py-1;
+}
+
+.edit-button {
+    @apply opacity-0 transition-opacity duration-200 text-sm cursor-pointer px-2 py-1 rounded-md;
+}
+
+.suggestion-line:hover .edit-button {
+    @apply opacity-70 bg-white/10;
+}
+
+.edit-modal {
+    @apply fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-dark-lighter p-6 rounded-lg border border-gray-800 shadow-lg z-50;
+}
+
+.modal-backdrop {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-40;
+}
+
+.suggestions-modal {
+    @apply fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[800px] bg-dark-lighter rounded-xl border border-gray-800 shadow-2xl z-50;
+}
+
+.context-line {
+    @apply text-gray-600 italic p-6 border-b border-gray-800;
+}
+
+.suggestion-item {
+    @apply p-6 border-b border-gray-800 transition-all duration-200 flex flex-col gap-4;
+}
+
+.suggestion-item:not(.editing) {
+    @apply flex-row items-center;
+}
+
+.suggestion-item.editing {
+    @apply bg-white/5;
+}
+
+.suggestion-item textarea {
+    @apply font-serif text-lg resize-none;
+}
+
+.suggestion-1 { @apply text-[#a5d6a7]; }
+.suggestion-2 { @apply text-[#90caf9]; }
+.suggestion-3 { @apply text-[#ffcc80]; }
+.suggestion-4 { @apply text-[#ce93d8]; }
+.suggestion-5 { @apply text-[#ef9a9a]; }
+
+main {
+    @apply pl-[max(8rem,calc((100vw-42rem)/2))] pr-[max(8rem,calc((100vw-42rem)/2))];
+}
+
+main::-webkit-scrollbar {
+    @apply w-2;
+}
+
+main::-webkit-scrollbar-track {
+    @apply bg-transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded;
+}
+
+main::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+}
+
+.fullscreen .top-bar {
+    @apply opacity-0 transition-opacity duration-300;
+}
+
+.fullscreen .top-bar:hover {
+    @apply opacity-100;
+}
+
+.fullscreen .sidebar {
+    @apply hidden;
+}
+
+.fullscreen main {
+    @apply pl-[max(2rem,calc((100vw-42rem)/2))] pr-[max(2rem,calc((100vw-42rem)/2))];
+}

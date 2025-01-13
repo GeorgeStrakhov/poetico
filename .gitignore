@@ -51,3 +51,25 @@ Icon
 # Logs
 *.log
 logs/
+# Vite + Vue
+node_modules/
+.DS_Store
+dist-ssr
+*.local
+coverage
+/cypress/videos/
+/cypress/screenshots/
+.env.local
+.env.*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+frontend/.vscode
