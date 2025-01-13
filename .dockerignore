@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+
+# Node
+frontend/node_modules
+frontend/.npm
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Local data
+data/*
+!data/.gitkeep
+
+# Environment variables
+.env
+.env.*
+
+# Debug logs
+debug.log 
