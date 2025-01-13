@@ -4,17 +4,19 @@ import NotFound from './views/NotFound.vue'
 import PoemList from './views/PoemList.vue'
 import PoemView from './views/PoemView.vue'
 import Download from './views/Download.vue'
+import Auth from './views/Auth.vue'
 
 const routes = [
   {
     path: '/',
     name: 'home',
-    component: Editor
+    component: PoemList
   },
   {
     path: '/p/:id',
     name: 'poem',
-    component: Editor
+    component: Editor,
+    meta: { requiresAuth: true }
   },
   {
     path: '/v',
@@ -32,6 +34,11 @@ const routes = [
     component: Download
   },
   {
+    path: '/auth',
+    name: 'auth',
+    component: Auth
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: NotFound
@@ -41,6 +48,16 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!localStorage.getItem('auth_token')
+  
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/v')
+  } else {
+    next()
+  }
 })
 
 export default router 

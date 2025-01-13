@@ -67,6 +67,7 @@ import WritingArea from '../components/WritingArea.vue'
 import EditModal from '../components/EditModal.vue'
 import SuggestionsModal from '../components/SuggestionsModal.vue'
 import { useToast } from '../composables/useToast'
+import { useAuth } from '../composables/useAuth'
 
 // State
 const content = ref('')
@@ -89,6 +90,7 @@ const API_URL = '/api'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { getAuthHeaders } = useAuth()
 
 // Computed
 const hasAlternatives = computed(() => alternatives.value?.length > 0)
@@ -132,7 +134,10 @@ const generateLines = async () => {
     isGenerating.value = true
     const response = await fetch(`${API_URL}/generate_line`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
       body: JSON.stringify({ current_text: content.value.trim() })
     })
     const data = await response.json()
@@ -148,12 +153,15 @@ const generateMore = generateLines
 
 const selectLine = async (index, customText = null) => {
   const selectedText = customText || alternatives.value[index]
-  const allAlternatives = [...alternatives.value]  // Create a copy for the backend
+  const allAlternatives = [...alternatives.value]
   
   try {
     await fetch(`${API_URL}/record_preference`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
       body: JSON.stringify({
         current_text: content.value.trim(),
         alternatives: allAlternatives,
@@ -192,7 +200,10 @@ const savePoem = async () => {
   try {
     const response = await fetch(`${API_URL}/save_poem`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
       body: JSON.stringify({ 
         id: currentPoemId.value || generateId(),
         content: content.value 
@@ -218,7 +229,9 @@ const loadPoem = async (id) => {
   }
 
   try {
-    const response = await fetch(`${API_URL}/poem/${id}`)
+    const response = await fetch(`${API_URL}/poem/${id}`, {
+      headers: getAuthHeaders()
+    })
     if (!response.ok) {
       if (response.status === 404) {
         content.value = ''

@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import json
 from pathlib import Path
 import os
@@ -27,6 +27,23 @@ import io
 
 # Load environment variables
 load_dotenv()
+
+AUTHOR_SECRET = os.getenv("AUTHOR_SECRET")
+if not AUTHOR_SECRET:
+    raise Exception("AUTHOR_SECRET environment variable is required")
+
+async def verify_token(authorization: Optional[str] = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="No authorization header")
+    
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != 'bearer':
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+        if token != AUTHOR_SECRET:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
 
 # Check if we're in development mode
 IS_DEV = os.getenv("DEV_MODE", "true").lower() == "true"
@@ -108,8 +125,8 @@ def randomly_truncate_text(text: str) -> str:
     keep_lines = random.randint(1, min(3, len(lines)))
     return '\n'.join(lines[-keep_lines:])
 
-# Move all API routes to api_app
-@api_app.post("/generate_line", response_model=GenerateResponse)
+# Protected routes require token
+@api_app.post("/generate_line", dependencies=[Depends(verify_token)])
 async def generate_lines(request: GenerateRequest):
     logger.debug(f"Received generate request with text: {request.current_text}")
     
@@ -168,7 +185,7 @@ async def generate_lines(request: GenerateRequest):
         logger.error(f"Error in generate_lines: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_app.post("/record_preference")
+@api_app.post("/record_preference", dependencies=[Depends(verify_token)])
 async def record_preference(preference: PreferenceRecord):
     logger.debug(f"Recording preference: {preference}")
     try:
@@ -179,7 +196,7 @@ async def record_preference(preference: PreferenceRecord):
         logger.error(f"Error recording preference: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_app.get("/download_preferences")
+@api_app.get("/download_preferences", dependencies=[Depends(verify_token)])
 async def download_preferences():
     try:
         if not PREFERENCES_FILE.exists():
@@ -195,7 +212,7 @@ async def download_preferences():
         raise HTTPException(status_code=500, detail=str(e))
 
 # New endpoint to save poem
-@api_app.post("/save_poem")
+@api_app.post("/save_poem", dependencies=[Depends(verify_token)])
 async def save_poem(poem: dict):
     try:
         content = poem.get("content", "").strip()
@@ -227,7 +244,7 @@ async def save_poem(poem: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Update list poems endpoint to parse new filename format
-@api_app.get("/list_poems")
+@api_app.get("/list_poems", dependencies=[Depends(verify_token)])
 async def list_poems():
     try:
         poems_dir = POEMS_DIR
@@ -262,7 +279,7 @@ async def list_poems():
         raise HTTPException(status_code=500, detail=str(e))
 
 # Update get poem endpoint to handle new filename format
-@api_app.get("/poem/{poem_id}")
+@api_app.get("/poem/{poem_id}", dependencies=[Depends(verify_token)])
 async def get_poem(poem_id: str):
     try:
         # Look for any file containing the poem_id in the middle part
@@ -284,7 +301,7 @@ async def get_poem(poem_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Add delete poem endpoint
-@api_app.delete("/poem/{poem_id}")
+@api_app.delete("/poem/{poem_id}", dependencies=[Depends(verify_token)])
 async def delete_poem(poem_id: str):
     try:
         deleted = False
@@ -301,6 +318,7 @@ async def delete_poem(poem_id: str):
         logger.error(f"Error deleting poem: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Public routes don't require token
 @api_app.get("/download_poems_zip")
 async def download_poems_zip():
     try:
