@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 import webbrowser
 from threading import Timer
 from loguru import logger
@@ -22,6 +22,8 @@ from datetime import datetime
 from slugify import slugify
 import glob
 import random
+import zipfile
+import io
 
 # Load environment variables
 load_dotenv()
@@ -111,27 +113,57 @@ def randomly_truncate_text(text: str) -> str:
 async def generate_lines(request: GenerateRequest):
     logger.debug(f"Received generate request with text: {request.current_text}")
     
-    # Generate 5 random temperatures between 0.1 and 1.5
+    # Generate initial temperatures between 0.1 and 1.5
     temperatures = [round(random.uniform(0.1, 1.5), 2) for _ in range(5)]
     
     try:
-        # Use ThreadPoolExecutor for concurrent execution
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            # For each generation, randomly decide whether to truncate the text
-            texts = [
-                randomly_truncate_text(request.current_text) if random.random() < 0.7 
-                else request.current_text 
-                for _ in range(5)
-            ]
+        unique_alternatives = set()
+        final_alternatives = []
+        final_temperatures = []
+        max_attempts = 10  # Prevent infinite loops
+        attempt = 0
+        
+        while len(unique_alternatives) < 5 and attempt < max_attempts:
+            # Use ThreadPoolExecutor for concurrent execution
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                # For each missing alternative, generate a new one
+                remaining = 5 - len(unique_alternatives)
+                
+                # For each generation, randomly decide whether to truncate the text
+                texts = [
+                    randomly_truncate_text(request.current_text) if random.random() < 0.7 
+                    else request.current_text 
+                    for _ in range(remaining)
+                ]
+                
+                # For re-rolls, use higher temperatures
+                new_temps = [
+                    round(random.uniform(0.5 + (attempt * 0.2), 1.5 + (attempt * 0.2)), 2)
+                    for _ in range(remaining)
+                ]
+                
+                # Create tasks with different texts and temperatures
+                tasks = [
+                    (text, temp) for text, temp in zip(texts, new_temps)
+                ]
+                
+                new_alternatives = list(executor.map(lambda x: generate_line(*x), tasks))
+                
+                # Add new unique alternatives
+                for alt, temp in zip(new_alternatives, new_temps):
+                    if alt not in unique_alternatives:
+                        unique_alternatives.add(alt)
+                        final_alternatives.append(alt)
+                        final_temperatures.append(temp)
+                        if len(unique_alternatives) == 5:
+                            break
             
-            # Create tasks with different texts and temperatures
-            tasks = [
-                (text, temp) for text, temp in zip(texts, temperatures)
-            ]
-            
-            alternatives = list(executor.map(lambda x: generate_line(*x), tasks))
-            
-        return GenerateResponse(alternatives=alternatives, temperatures=temperatures)
+            attempt += 1
+        
+        if len(final_alternatives) < 5:
+            logger.warning(f"Could only generate {len(final_alternatives)} unique alternatives after {attempt} attempts")
+        
+        return GenerateResponse(alternatives=final_alternatives, temperatures=final_temperatures)
     except Exception as e:
         logger.error(f"Error in generate_lines: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -149,13 +181,18 @@ async def record_preference(preference: PreferenceRecord):
 
 @api_app.get("/download_preferences")
 async def download_preferences():
-    if not PREFERENCES_FILE.exists():
-        raise HTTPException(status_code=404, detail="No preferences file found")
-    return FileResponse(
-        PREFERENCES_FILE,
-        media_type="application/json",
-        filename="line_preferences.jsonl"
-    )
+    try:
+        if not PREFERENCES_FILE.exists():
+            raise HTTPException(status_code=404, detail="No preferences file found")
+            
+        return FileResponse(
+            PREFERENCES_FILE,
+            media_type="application/x-jsonlines",
+            filename="line_preferences.jsonl"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading preferences: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # New endpoint to save poem
 @api_app.post("/save_poem")
@@ -262,6 +299,35 @@ async def delete_poem(poem_id: str):
         return {"status": "success"}
     except Exception as e:
         logger.error(f"Error deleting poem: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_app.get("/download_poems_zip")
+async def download_poems_zip():
+    try:
+        # Create a BytesIO object to store the zip file
+        zip_buffer = io.BytesIO()
+        
+        # Create a new zip file
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # Add all poem files to the zip
+            for poem_path in POEMS_DIR.glob("*.txt"):
+                # Read the poem file
+                with open(poem_path, 'r') as poem_file:
+                    content = poem_file.read()
+                    # Add the file to the zip with its name
+                    zip_file.writestr(poem_path.name, content)
+        
+        # Seek to the beginning of the BytesIO buffer
+        zip_buffer.seek(0)
+        
+        # Return the zip file as a streaming response
+        return StreamingResponse(
+            iter([zip_buffer.getvalue()]),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename=gspoems.zip"}
+        )
+    except Exception as e:
+        logger.error(f"Error creating zip file: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Mount the API routes first

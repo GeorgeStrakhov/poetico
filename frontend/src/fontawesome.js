@@ -12,7 +12,10 @@ import {
   faTrash,
   faCheckCircle,
   faExclamationCircle,
-  faInfoCircle
+  faInfoCircle,
+  faSpinner,
+  faArrowLeft,
+  faDownload
 } from '@fortawesome/free-solid-svg-icons'
 
 // Add icons to the library
@@ -28,7 +31,10 @@ library.add(
   faTrash,
   faCheckCircle,
   faExclamationCircle,
-  faInfoCircle
+  faInfoCircle,
+  faSpinner,
+  faArrowLeft,
+  faDownload
 )
 
 export { FontAwesomeIcon } 

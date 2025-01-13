@@ -7,8 +7,13 @@
       <button 
         @click="$emit('generate-lines')" 
         class="top-bar-icon text-gray-300 hover:text-white flex items-center space-x-2"
+        :disabled="isGenerating"
       >
-        <font-awesome-icon icon="magic" class="text-xl" />
+        <font-awesome-icon 
+          :icon="isGenerating ? 'spinner' : 'magic'" 
+          class="text-xl"
+          :class="{'animate-spin': isGenerating}" 
+        />
         <span class="text-sm">⌘ + Enter</span>
       </button>
       <button 
@@ -51,6 +56,10 @@ defineProps({
     required: true
   },
   isFullscreen: {
+    type: Boolean,
+    required: true
+  },
+  isGenerating: {
     type: Boolean,
     required: true
   }

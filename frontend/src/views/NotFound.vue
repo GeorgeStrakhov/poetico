@@ -7,7 +7,7 @@
         to="/" 
         class="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-200 inline-flex items-center gap-2"
       >
-        <span>Start writing</span>
+        <span>home</span>
       </router-link>
     </div>
   </div>

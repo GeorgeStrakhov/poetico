@@ -16,6 +16,7 @@
             :has-alternatives="hasAlternatives"
             :has-unsaved-changes="hasUnsavedChanges"
             :is-fullscreen="isFullscreen"
+            :is-generating="isGenerating"
             @toggle-sidebar="toggleSidebar"
             @generate-lines="generateLines"
             @generate-more="generateMore"
@@ -81,6 +82,7 @@ const editTextarea = ref(null)
 const textarea = ref(null)
 const contentHeight = ref(0)
 const isFullscreen = ref(false)
+const isGenerating = ref(false)
 
 const API_URL = '/api'
 
@@ -127,6 +129,7 @@ const contentChanged = () => {
 const generateLines = async () => {
   try {
     editingLine.value = null
+    isGenerating.value = true
     const response = await fetch(`${API_URL}/generate_line`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -136,6 +139,8 @@ const generateLines = async () => {
     alternatives.value = data.alternatives
   } catch (error) {
     console.error('Generation error:', error)
+  } finally {
+    isGenerating.value = false
   }
 }
 

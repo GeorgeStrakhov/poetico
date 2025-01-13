@@ -2,7 +2,7 @@
   <div 
     id="sidebar" 
     :class="['sidebar', {'closed': !isOpen}]" 
-    class="fixed top-0 left-0 h-full w-64 bg-dark-lighter p-4 overflow-y-auto border-r border-gray-800"
+    class="fixed top-0 left-0 h-full w-64 bg-dark-lighter p-4 overflow-y-auto border-r border-gray-800 flex flex-col"
   >
     <div class="flex justify-between items-center mb-4">
       <button @click="$emit('toggle')" class="text-gray-400 hover:text-white">
@@ -14,7 +14,7 @@
         <span class="ml-2 text-xs opacity-50">⌘P</span>
       </a>
     </div>
-    <div class="space-y-2">
+    <div class="space-y-2 flex-grow">
       <div 
         v-for="poem in poems" 
         :key="poem.id" 
@@ -38,6 +38,15 @@
         </div>
       </div>
     </div>
+    
+    <!-- Download Link -->
+    <router-link 
+      to="/download" 
+      class="mt-4 p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded flex items-center gap-2 transition-colors"
+    >
+      <font-awesome-icon :icon="['fas', 'download']" />
+      <span>Download</span>
+    </router-link>
   </div>
 </template>
 
