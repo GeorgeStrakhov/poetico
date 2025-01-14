@@ -71,7 +71,8 @@ client = OpenAI(
 
 # Ensure data directory exists
 ROOT_DIR = Path(__file__).parent.parent.absolute()
-DATA_DIR = ROOT_DIR / "data"
+# Change this to use the mounted volume path in production
+DATA_DIR = Path("/data") if not IS_DEV else (ROOT_DIR / "data")
 POEMS_DIR = DATA_DIR / "poems"
 DATA_DIR.mkdir(exist_ok=True)
 POEMS_DIR.mkdir(exist_ok=True)
