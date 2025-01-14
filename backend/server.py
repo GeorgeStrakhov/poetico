@@ -356,8 +356,10 @@ if not IS_DEV:
     # Check if the dist directory exists
     dist_path = Path("frontend/dist")
     assets_path = dist_path / "assets"
+    public_path = Path("frontend/public")
+    
     if dist_path.exists() and assets_path.exists():
-        # Serve static files from the Vue build directory
+        # Serve static files from the Vue build directory and public directory
         app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
         
         @app.get("/{full_path:path}")
@@ -366,7 +368,12 @@ if not IS_DEV:
             if full_path.startswith("api/"):
                 raise HTTPException(status_code=404, detail="Not found")
             
-            # Serve index.html for all other routes
+            # Try to serve from public directory first
+            public_file = public_path / full_path
+            if public_file.is_file():
+                return FileResponse(str(public_file))
+            
+            # Fall back to index.html for all other routes
             return FileResponse(str(dist_path / "index.html"))
 else:
     # In development mode, we don't need to serve the frontend

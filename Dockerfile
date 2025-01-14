@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
+# Ensure frontend/public exists
+RUN mkdir -p frontend/public
+
 # Make sure the script is executable
 RUN chmod +x deploy.sh
 
